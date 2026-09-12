@@ -1,32 +1,44 @@
 'use strict';
 
 /* ══════════════════════════════════════════════════════
-   CUSTOM CURSOR
+   SHARED MOUSE STATE
+   ══════════════════════════════════════════════════════ */
+const _mouse = { x: 0, y: 0 };
+document.addEventListener('mousemove', e => {
+  _mouse.x = e.clientX;
+  _mouse.y = e.clientY;
+}, { passive: true });
+
+/* ══════════════════════════════════════════════════════
+   CUSTOM CURSOR — GPU-accelerated transforms
    ══════════════════════════════════════════════════════ */
 (function () {
   const dot  = document.getElementById('cursor-dot');
   const ring = document.getElementById('cursor-ring');
-  let rx = 0, ry = 0, mx = 0, my = 0;
+  if (!dot || !ring) return;
 
-  document.addEventListener('mousemove', e => {
-    mx = e.clientX; my = e.clientY;
-    dot.style.left = mx + 'px';
-    dot.style.top  = my + 'px';
-  });
+  let rx = 0, ry = 0;
 
-  (function trackRing() {
-    rx += (mx - rx) * 0.1;
-    ry += (my - ry) * 0.1;
-    ring.style.left = rx + 'px';
-    ring.style.top  = ry + 'px';
-    requestAnimationFrame(trackRing);
+  (function tick() {
+    // Dot follows instantly via transform (GPU composited)
+    dot.style.transform = `translate3d(${_mouse.x}px, ${_mouse.y}px, 0) translate(-50%, -50%)`;
+
+    // Ring lerps with higher factor for snappier feel
+    rx += (_mouse.x - rx) * 0.18;
+    ry += (_mouse.y - ry) * 0.18;
+    ring.style.transform = `translate3d(${rx}px, ${ry}px, 0) translate(-50%, -50%)`;
+
+    requestAnimationFrame(tick);
   })();
 
-  document.querySelectorAll('a, button, .tab, .skill-chip, .project-card, .cert-card, input, textarea, .timeline-card')
-    .forEach(el => {
-      el.addEventListener('mouseenter', () => document.body.classList.add('c-hover'));
-      el.addEventListener('mouseleave', () => document.body.classList.remove('c-hover'));
-    });
+  // Hover state — use event delegation instead of per-element listeners
+  const hoverSelectors = 'a, button, .tab, .skill-chip, .project-card, .cert-card, input, textarea, .timeline-card';
+  document.addEventListener('mouseover', e => {
+    if (e.target.closest(hoverSelectors)) document.body.classList.add('c-hover');
+  }, { passive: true });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest(hoverSelectors)) document.body.classList.remove('c-hover');
+  }, { passive: true });
 })();
 
 /* ══════════════════════════════════════════════════════
@@ -76,7 +88,7 @@
 })();
 
 /* ══════════════════════════════════════════════════════
-   HERO SCROLL PARALLAX
+   HERO SCROLL PARALLAX — rAF-throttled
    ══════════════════════════════════════════════════════ */
 (function () {
   const heroContent = document.querySelector('.hero-content');
@@ -85,16 +97,21 @@
   const cardB = document.querySelector('.card-b');
   const cardC = document.querySelector('.card-c');
 
+  let ticking = false;
   window.addEventListener('scroll', () => {
-    const sy = window.scrollY;
-    if (sy > window.innerHeight) return; // only while hero visible
-
-    if (heroContent) heroContent.style.transform = `translateY(${sy * 0.1}px)`;
-    if (heroVisual)  heroVisual.style.transform  = `translateY(${sy * 0.05}px)`;
-    // Float cards drift at different rates for depth
-    if (cardA) cardA.style.setProperty('--px', `${sy * 0.08}px`);
-    if (cardB) cardB.style.setProperty('--px', `${-sy * 0.06}px`);
-    if (cardC) cardC.style.setProperty('--px', `${sy * 0.1}px`);
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const sy = window.scrollY;
+      if (sy <= window.innerHeight) {
+        if (heroContent) heroContent.style.transform = `translate3d(0,${sy * 0.1}px,0)`;
+        if (heroVisual)  heroVisual.style.transform  = `translate3d(0,${sy * 0.05}px,0)`;
+        if (cardA) cardA.style.setProperty('--px', `${sy * 0.08}px`);
+        if (cardB) cardB.style.setProperty('--px', `${-sy * 0.06}px`);
+        if (cardC) cardC.style.setProperty('--px', `${sy * 0.1}px`);
+      }
+      ticking = false;
+    });
   }, { passive: true });
 })();
 
@@ -400,18 +417,14 @@ renderProjects();
   const lineSegs = new THREE.LineSegments(lineGeo, lineMat);
   scene.add(lineSegs);
 
-  // ── Mouse parallax ─────────────────────────────────────
-  let mx = 0, my = 0;
-  document.addEventListener('mousemove', e => {
-    mx = (e.clientX / innerWidth  - 0.5) * 2;
-    my = (e.clientY / innerHeight - 0.5) * 2;
-  }, { passive: true });
-
+  // ── Mouse parallax — reads from shared _mouse state ──
   let t = 0;
   function loop() {
     t += 0.004;
-    camera.position.x += (mx * 0.6 - camera.position.x) * 0.04;
-    camera.position.y += (-my * 0.4 - camera.position.y) * 0.04;
+    const nmx = (_mouse.x / innerWidth  - 0.5) * 2;
+    const nmy = (_mouse.y / innerHeight - 0.5) * 2;
+    camera.position.x += (nmx * 0.6 - camera.position.x) * 0.04;
+    camera.position.y += (-nmy * 0.4 - camera.position.y) * 0.04;
     camera.lookAt(0, 0, 0);
 
     // Subtle pulse on line opacity
@@ -528,17 +541,14 @@ renderProjects();
   light3.position.set(0, 6, 4);
   scene.add(light3);
 
-  // ── Mouse interaction ──────────────────────────────────
-  let hx = 0, hy = 0;
-  document.addEventListener('mousemove', e => {
-    hx = (e.clientX / innerWidth  - 0.5) * 2;
-    hy = (e.clientY / innerHeight - 0.5) * 2;
-  }, { passive: true });
+  // ── Mouse interaction — reads from shared _mouse state ──
 
   let t = 0;
   function animate() {
     t += 0.006;
 
+    const hx = (_mouse.x / innerWidth  - 0.5) * 2;
+    const hy = (_mouse.y / innerHeight - 0.5) * 2;
     helixGroup.rotation.y = t * 0.35 + hx * 0.15;
     helixGroup.rotation.x = hy * 0.06;
 

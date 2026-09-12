@@ -114,22 +114,24 @@ ul { list-style: none; }
    ══════════════════════════════════════════════════════ */
 #cursor-dot {
   position: fixed;
+  top: 0; left: 0;
   width: 7px; height: 7px;
   background: var(--emerald-hi);
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
-  transform: translate(-50%, -50%);
+  will-change: transform;
   transition: width .2s, height .2s, background .2s;
 }
 #cursor-ring {
   position: fixed;
+  top: 0; left: 0;
   width: 34px; height: 34px;
   border: 1.5px solid rgba(46, 148, 80, 0.5);
   border-radius: 50%;
   pointer-events: none;
   z-index: 9998;
-  transform: translate(-50%, -50%);
+  will-change: transform;
   transition: width .3s, height .3s, border-color .3s;
 }
 body.c-hover #cursor-dot { width: 10px; height: 10px; background: var(--gold-light); }
@@ -738,9 +740,10 @@ section:not(#hero) {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   backdrop-filter: blur(12px);
-  transition: var(--t);
+  transition: transform .28s cubic-bezier(.65,.05,0,1), border-color .28s, background .28s, box-shadow .28s;
   position: relative;
   overflow: hidden;
+  will-change: transform;
 }
 .timeline-card::before {
   content: '';
@@ -764,7 +767,7 @@ section:not(#hero) {
 .timeline-card:hover {
   border-color: var(--border-hi);
   background: var(--surface-2);
-  transform: perspective(900px) translateZ(8px) translateY(-4px);
+  transform: translateY(-4px);
   box-shadow: 0 20px 50px rgba(0,0,0,0.35), 0 0 0 1px var(--border-mid);
 }
 .timeline-card:hover::before { opacity: 1; }
@@ -863,8 +866,9 @@ section:not(#hero) {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  transition: var(--t);
+  transition: transform .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
   cursor: default;
+  will-change: transform;
 }
 .skill-chip:hover {
   border-color: var(--gold);
@@ -876,7 +880,7 @@ section:not(#hero) {
   width: 20px; height: 20px;
   object-fit: contain;
   filter: none;
-  transition: transform var(--t);
+  transition: transform .2s ease;
 }
 .skill-chip:hover img { transform: scale(1.12) rotate(-6deg); }
 .skill-chip .icon-invert { filter: invert(1) brightness(0.75); }
@@ -960,8 +964,9 @@ section:not(#hero) {
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--surface);
-  transition: var(--t);
+  transition: transform .28s cubic-bezier(.65,.05,0,1), border-color .28s, box-shadow .28s;
   position: relative;
+  will-change: transform;
 }
 .project-card::before {
   content: '';
@@ -975,7 +980,7 @@ section:not(#hero) {
 }
 .project-card:hover {
   border-color: var(--gold);
-  transform: perspective(1000px) rotateX(-2deg) translateY(-8px);
+  transform: translateY(-8px);
   box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 40px rgba(201,168,76,0.12), 0 0 0 1px var(--gold-glow);
 }
 .project-card:hover::before { opacity: 1; }
@@ -1076,9 +1081,10 @@ section:not(#hero) {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  transition: var(--t);
+  transition: transform .25s ease, border-color .25s ease, background .25s ease, box-shadow .25s ease;
   position: relative;
   overflow: hidden;
+  will-change: transform;
 }
 .cert-card::before {
   content: '';
